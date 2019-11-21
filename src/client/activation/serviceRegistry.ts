@@ -12,15 +12,15 @@ import { LanguageServerSurveyBanner } from '../languageServices/languageServerSu
 import { ProposeLanguageServerBanner } from '../languageServices/proposeLanguageServerBanner';
 import { AATesting } from './aaTesting';
 import { ExtensionActivationManager } from './activationManager';
-import { LanguageServerExtensionActivationService } from './activationService';
+import { LanguageServerExtensionActivationService } from './languageServer/cache';
 import { ExtensionSurveyPrompt } from './extensionSurvey';
-import { JediExtensionActivator } from './jedi';
+import { JediExtensionActivator } from './languageServer/jeditServer';
 import { LanguageServerExtensionActivator } from './languageServer/activator';
 import { LanguageServerAnalysisOptions } from './languageServer/analysisOptions';
 import { DownloadBetaChannelRule, DownloadDailyChannelRule } from './languageServer/downloadChannelRules';
 import { LanguageServerDownloader } from './languageServer/downloader';
 import { BaseLanguageClientFactory, DownloadedLanguageClientFactory, SimpleLanguageClientFactory } from './languageServer/languageClientFactory';
-import { LanguageServer } from './languageServer/languageServer';
+import { LanguageServer } from './languageServer/dotNetServer';
 import { LanguageServerCompatibilityService } from './languageServer/languageServerCompatibilityService';
 import { LanguageServerExtension } from './languageServer/languageServerExtension';
 import { LanguageServerFolderService } from './languageServer/languageServerFolderService';

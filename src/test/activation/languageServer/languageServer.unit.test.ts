@@ -9,7 +9,7 @@ import * as typemoq from 'typemoq';
 import { Uri } from 'vscode';
 import { Disposable, LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
 import { BaseLanguageClientFactory } from '../../../client/activation/languageServer/languageClientFactory';
-import { LanguageServer } from '../../../client/activation/languageServer/languageServer';
+import { LanguageServer } from '../../../client/activation/languageServer/dotNetServer';
 import { ILanguageClientFactory } from '../../../client/activation/types';
 import { ICommandManager } from '../../../client/common/application/types';
 import '../../../client/common/extensions';

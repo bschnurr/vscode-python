@@ -39,7 +39,7 @@ import {
 } from '../../common/types';
 import { debounceSync } from '../../common/utils/decorators';
 import { IEnvironmentVariablesProvider } from '../../common/variables/types';
-import { IInterpreterService } from '../../interpreter/contracts';
+import { IInterpreterService, PythonInterpreter } from '../../interpreter/contracts';
 import { ILanguageServerAnalysisOptions, ILanguageServerFolderService, ILanguageServerOutputChannel } from '../types';
 
 @injectable()
@@ -64,7 +64,7 @@ export class LanguageServerAnalysisOptions implements ILanguageServerAnalysisOpt
     ) {
         this.output = this.lsOutputChannel.channel;
     }
-    public async initialize(resource: Resource) {
+    public async initialize(resource: Resource, interpreter?: PythonInterpreter) {
         this.resource = resource;
         this.languageServerFolder = await this.languageServerFolderService.getLanguageServerFolderName(resource);
 

@@ -8,7 +8,7 @@ import { anything, instance, mock, verify, when } from 'ts-mockito';
 import * as typemoq from 'typemoq';
 import { TextDocument, Uri } from 'vscode';
 import { ExtensionActivationManager } from '../../client/activation/activationManager';
-import { LanguageServerExtensionActivationService } from '../../client/activation/activationService';
+import { LanguageServerExtensionActivationService } from '../../client/activation/languageServer/cache';
 import { IExtensionActivationService } from '../../client/activation/types';
 import { IApplicationDiagnostics } from '../../client/application/types';
 import { IDocumentManager, IWorkspaceService } from '../../client/common/application/types';

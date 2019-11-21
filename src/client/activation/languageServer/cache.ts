@@ -5,27 +5,28 @@
 
 import { inject, injectable } from 'inversify';
 import { ConfigurationChangeEvent, Disposable, OutputChannel, Uri } from 'vscode';
-import { LSNotSupportedDiagnosticServiceId } from '../application/diagnostics/checks/lsNotSupported';
-import { IDiagnosticsService } from '../application/diagnostics/types';
-import { IApplicationShell, ICommandManager, IWorkspaceService } from '../common/application/types';
-import { STANDARD_OUTPUT_CHANNEL } from '../common/constants';
-import { LSControl, LSEnabled } from '../common/experimentGroups';
-import '../common/extensions';
-import { traceError } from '../common/logger';
-import { IConfigurationService, IDisposableRegistry, IExperimentsManager, IOutputChannel, IPersistentStateFactory, IPythonSettings, Resource } from '../common/types';
-import { swallowExceptions } from '../common/utils/decorators';
-import { IServiceContainer } from '../ioc/types';
-import { sendTelemetryEvent } from '../telemetry';
-import { EventName } from '../telemetry/constants';
-import { IExtensionActivationService, ILanguageServerActivator, LanguageServerActivator } from './types';
+import { LSNotSupportedDiagnosticServiceId } from '../../application/diagnostics/checks/lsNotSupported';
+import { IDiagnosticsService } from '../../application/diagnostics/types';
+import { IApplicationShell, ICommandManager, IWorkspaceService } from '../../common/application/types';
+import { STANDARD_OUTPUT_CHANNEL } from '../../common/constants';
+import { LSControl, LSEnabled } from '../../common/experimentGroups';
+import '../../common/extensions';
+import { traceError } from '../../common/logger';
+import { IConfigurationService, IDisposableRegistry, IExperimentsManager, IOutputChannel, IPersistentStateFactory, IPythonSettings, Resource } from '../../common/types';
+import { swallowExceptions } from '../../common/utils/decorators';
+import { IServiceContainer } from '../../ioc/types';
+import { sendTelemetryEvent } from '../../telemetry';
+import { EventName } from '../../telemetry/constants';
+import { IExtensionActivationService, ILanguageServerActivator, LanguageServerActivator, ILanguageServerCache, ILanguageServer } from '../types';
+import { PythonInterpreter } from '../../interpreter/contracts';
 
 const jediEnabledSetting: keyof IPythonSettings = 'jediEnabled';
 const workspacePathNameForGlobalWorkspaces = '';
 type ActivatorInfo = { jedi: boolean; activator: ILanguageServerActivator };
 
 @injectable()
-export class LanguageServerExtensionActivationService implements IExtensionActivationService, Disposable {
-    private lsActivatedWorkspaces = new Map<string, ILanguageServerActivator>();
+export class LanguageServerCache implements IExtensionActivationService, ILanguageServerCache, Disposable {
+    private cache = new Map<string, ILanguageServer>();
     private currentActivator?: ActivatorInfo;
     private jediActivatedOnce: boolean = false;
     private readonly workspaceService: IWorkspaceService;
@@ -50,6 +51,7 @@ export class LanguageServerExtensionActivationService implements IExtensionActiv
         disposables.push(this.workspaceService.onDidChangeWorkspaceFolders(this.onWorkspaceFoldersChanged, this));
     }
 
+    // When we change the current active document, we might need to recreate our language client.
     public async activate(resource: Resource): Promise<void> {
         this.resource = resource;
         let jedi = this.useJedi();
@@ -189,7 +191,9 @@ export class LanguageServerExtensionActivationService implements IExtensionActiv
             this.serviceContainer.get<ICommandManager>(ICommandManager).executeCommand('workbench.action.reloadWindow');
         }
     }
-    private getWorkspacePathKey(resource: Resource): string {
-        return this.workspaceService.getWorkspaceFolderIdentifier(resource, workspacePathNameForGlobalWorkspaces);
+    private getKey(resource: Resource, interpreter?: PythonInterpreter): string {
+        const resourcePortion = this.workspaceService.getWorkspaceFolderIdentifier(resource, workspacePathNameForGlobalWorkspaces);
+        const interperterPortion = interpreter ? interpreter.path : '';
+        return `${resourcePortion}-${interperterPortion}`;
     }
 }

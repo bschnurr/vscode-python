@@ -7,15 +7,15 @@ import { instance, mock, verify } from 'ts-mockito';
 
 import { AATesting } from '../../client/activation/aaTesting';
 import { ExtensionActivationManager } from '../../client/activation/activationManager';
-import { LanguageServerExtensionActivationService } from '../../client/activation/activationService';
+import { LanguageServerExtensionActivationService } from '../../client/activation/languageServer/cache';
 import { ExtensionSurveyPrompt } from '../../client/activation/extensionSurvey';
-import { JediExtensionActivator } from '../../client/activation/jedi';
+import { JediExtensionActivator } from '../../client/activation/languageServer/jeditServer';
 import { LanguageServerExtensionActivator } from '../../client/activation/languageServer/activator';
 import { LanguageServerAnalysisOptions } from '../../client/activation/languageServer/analysisOptions';
 import { DownloadBetaChannelRule, DownloadDailyChannelRule } from '../../client/activation/languageServer/downloadChannelRules';
 import { LanguageServerDownloader } from '../../client/activation/languageServer/downloader';
 import { BaseLanguageClientFactory, DownloadedLanguageClientFactory, SimpleLanguageClientFactory } from '../../client/activation/languageServer/languageClientFactory';
-import { LanguageServer } from '../../client/activation/languageServer/languageServer';
+import { LanguageServer } from '../../client/activation/languageServer/dotNetServer';
 import { LanguageServerCompatibilityService } from '../../client/activation/languageServer/languageServerCompatibilityService';
 import { LanguageServerExtension } from '../../client/activation/languageServer/languageServerExtension';
 import { LanguageServerFolderService } from '../../client/activation/languageServer/languageServerFolderService';

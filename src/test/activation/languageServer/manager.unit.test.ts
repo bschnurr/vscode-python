@@ -9,7 +9,7 @@ import { instance, mock, verify, when } from 'ts-mockito';
 import { Uri } from 'vscode';
 import { LanguageClientOptions } from 'vscode-languageclient';
 import { LanguageServerAnalysisOptions } from '../../../client/activation/languageServer/analysisOptions';
-import { LanguageServer } from '../../../client/activation/languageServer/languageServer';
+import { LanguageServer } from '../../../client/activation/languageServer/dotNetServer';
 import { LanguageServerExtension } from '../../../client/activation/languageServer/languageServerExtension';
 import { LanguageServerManager } from '../../../client/activation/languageServer/manager';
 import { ILanguageServer, ILanguageServerAnalysisOptions, ILanguageServerExtension } from '../../../client/activation/types';

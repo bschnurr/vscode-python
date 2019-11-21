@@ -9,7 +9,7 @@ import { expect } from 'chai';
 import { SemVer } from 'semver';
 import * as TypeMoq from 'typemoq';
 import { ConfigurationChangeEvent, Disposable, Uri, WorkspaceConfiguration } from 'vscode';
-import { LanguageServerExtensionActivationService } from '../../client/activation/activationService';
+import { LanguageServerExtensionActivationService } from '../../client/activation/languageServer/cache';
 import {
     FolderVersionPair,
     IExtensionActivationService,
@@ -582,8 +582,8 @@ suite('Activation - ActivationService', () => {
                 .verifiable(TypeMoq.Times.exactly(2));
             state.setup(s => s.updateValue(TypeMoq.It.isValue(true)))
                 .returns(() => {
-                state.setup(s => s.value).returns(() => true);
-                return Promise.resolve();
+                    state.setup(s => s.value).returns(() => true);
+                    return Promise.resolve();
                 })
                 .verifiable(TypeMoq.Times.once());
 
