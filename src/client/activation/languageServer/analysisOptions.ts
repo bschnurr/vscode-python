@@ -50,6 +50,7 @@ export class LanguageServerAnalysisOptions implements ILanguageServerAnalysisOpt
     private disposables: Disposable[] = [];
     private languageServerFolder: string = '';
     private resource: Resource;
+    private interpreter?: PythonInterpreter;
     private output: IOutputChannel;
     private readonly didChange = new EventEmitter<void>();
     constructor(@inject(IExtensionContext) private readonly context: IExtensionContext,
@@ -66,6 +67,7 @@ export class LanguageServerAnalysisOptions implements ILanguageServerAnalysisOpt
     }
     public async initialize(resource: Resource, interpreter?: PythonInterpreter) {
         this.resource = resource;
+        this.interpreter = interpreter;
         this.languageServerFolder = await this.languageServerFolderService.getLanguageServerFolderName(resource);
 
         let disposable = this.workspace.onDidChangeConfiguration(this.onSettingsChangedHandler, this);
@@ -88,7 +90,7 @@ export class LanguageServerAnalysisOptions implements ILanguageServerAnalysisOpt
     public async getAnalysisOptions(): Promise<LanguageClientOptions> {
         const properties: Record<string, {}> = {};
 
-        const interpreterInfo = await this.interpreterService.getActiveInterpreter(this.resource);
+        const interpreterInfo = this.interpreter ? this.interpreter : await this.interpreterService.getActiveInterpreter(this.resource);
         if (!interpreterInfo) {
             // tslint:disable-next-line:no-suspicious-comment
             // TODO: How do we handle this?  It is pretty unlikely...

@@ -1,24 +1,39 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 'use strict';
+import '../../common/extensions';
 
 import { inject, injectable } from 'inversify';
 import { ConfigurationChangeEvent, Disposable, OutputChannel, Uri } from 'vscode';
+
 import { LSNotSupportedDiagnosticServiceId } from '../../application/diagnostics/checks/lsNotSupported';
 import { IDiagnosticsService } from '../../application/diagnostics/types';
-import { IApplicationShell, ICommandManager, IWorkspaceService, ILanguageService } from '../../common/application/types';
+import { IApplicationShell, ICommandManager, IWorkspaceService } from '../../common/application/types';
 import { STANDARD_OUTPUT_CHANNEL } from '../../common/constants';
 import { LSControl, LSEnabled } from '../../common/experimentGroups';
-import '../../common/extensions';
 import { traceError } from '../../common/logger';
-import { IConfigurationService, IDisposableRegistry, IExperimentsManager, IOutputChannel, IPersistentStateFactory, IPythonSettings, Resource } from '../../common/types';
+import {
+    IConfigurationService,
+    IDisposableRegistry,
+    IExperimentsManager,
+    IOutputChannel,
+    IPersistentStateFactory,
+    IPythonSettings,
+    Resource
+} from '../../common/types';
 import { swallowExceptions } from '../../common/utils/decorators';
+import * as localize from '../../common/utils/localize';
+import { PythonInterpreter } from '../../interpreter/contracts';
 import { IServiceContainer } from '../../ioc/types';
 import { sendTelemetryEvent } from '../../telemetry';
 import { EventName } from '../../telemetry/constants';
-import { IExtensionActivationService, ILanguageServer, LanguageServerType, ILanguageServerCache, IStartableLanguageServer } from '../types';
-import { PythonInterpreter } from '../../interpreter/contracts';
+import {
+    IExtensionActivationService,
+    ILanguageServer,
+    ILanguageServerCache,
+    IStartableLanguageServer,
+    LanguageServerType
+} from '../types';
 
 const jediEnabledSetting: keyof IPythonSettings = 'jediEnabled';
 const workspacePathNameForGlobalWorkspaces = '';
@@ -27,6 +42,7 @@ type ServerInfo = { jedi: boolean; server: IStartableLanguageServer };
 @injectable()
 export class LanguageServerCache implements IExtensionActivationService, ILanguageServerCache, Disposable {
     private cache = new Map<string, Promise<IStartableLanguageServer>>();
+    private jediServer: IStartableLanguageServer | undefined;
     private currentServer?: ServerInfo;
     private readonly workspaceService: IWorkspaceService;
     private readonly output: OutputChannel;
@@ -142,6 +158,8 @@ export class LanguageServerCache implements IExtensionActivationService, ILangua
                 sendTelemetryEvent(EventName.PYTHON_LANGUAGE_SERVER_PLATFORM_SUPPORTED, undefined, { supported: false });
                 jedi = true;
             }
+        } else if (this.jediServer) {
+            return this.jediServer;
         }
 
         await this.logStartup(jedi);
@@ -161,6 +179,11 @@ export class LanguageServerCache implements IExtensionActivationService, ILangua
             server = this.serviceContainer.get<IStartableLanguageServer>(IStartableLanguageServer, serverName);
             this.currentServer = { jedi, server };
             await server.startup(resource, interpreter);
+        }
+
+        // Jedi is always a singleton. Don't need to create it more than once.
+        if (jedi) {
+            this.jediServer = server;
         }
 
         return server;
@@ -186,10 +209,10 @@ export class LanguageServerCache implements IExtensionActivationService, ILangua
         }
 
         const item = await this.appShell.showInformationMessage(
-            'Please reload the window switching between language engines.',
-            'Reload'
+            localize.LanguageService.reloadMessage(),
+            localize.LanguageService.reloadButton()
         );
-        if (item === 'Reload') {
+        if (item === localize.LanguageService.reloadButton()) {
             this.serviceContainer.get<ICommandManager>(ICommandManager).executeCommand('workbench.action.reloadWindow');
         }
     }

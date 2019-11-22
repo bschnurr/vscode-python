@@ -22,6 +22,7 @@ import {
     SignatureHelpContext,
     SymbolInformation,
     TextDocument,
+    TextDocumentContentChangeEvent,
     WorkspaceEdit
 } from 'vscode';
 import * as vscodeLanguageClient from 'vscode-languageclient';
@@ -52,7 +53,7 @@ import { Commands } from './constants';
 import { ProgressReporting } from './progress';
 
 @injectable()
-export class DotNetServer implements IStartableLanguageServer {
+export class DotNetLanguageServer implements IStartableLanguageServer {
     public languageClient: vscodeLanguageClient.LanguageClient | undefined;
     private readonly disposables: vscodeLanguageClient.Disposable[] = [];
     private disposed: boolean = false;
@@ -105,6 +106,20 @@ export class DotNetServer implements IStartableLanguageServer {
         return this.startLanguageClient(resource, interpreter, await this.analysisOptions.getAnalysisOptions());
     }
 
+    public handleOpen(document: TextDocument): void {
+        if (this.languageClient) {
+            this.languageClient.sendNotification(vscodeLanguageClient.DidOpenTextDocumentNotification.type,
+                this.languageClient.code2ProtocolConverter.asOpenTextDocumentParams(document));
+        }
+    }
+
+    public handleChanges(document: TextDocument, changes: TextDocumentContentChangeEvent[]): void {
+        if (this.languageClient) {
+            this.languageClient.sendNotification(vscodeLanguageClient.DidChangeTextDocumentNotification.type,
+                this.languageClient.code2ProtocolConverter.asChangeTextDocumentParams({ document, contentChanges: changes }));
+        }
+    }
+
     public provideRenameEdits(document: TextDocument, position: Position, newName: string, token: CancellationToken): ProviderResult<WorkspaceEdit> {
         return this.handleProvideRenameEdits(document, position, newName, token);
     }
@@ -135,6 +150,14 @@ export class DotNetServer implements IStartableLanguageServer {
 
     public provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp> {
         return this.handleProvideSignatureHelp(document, position, token, context);
+    }
+
+    @swallowExceptions('Activating Unit Tests Manager for Language Server')
+    public async registerTestServices() {
+        if (!this.languageClient) {
+            throw new Error('languageClient not initialized');
+        }
+        await this.testManager.activate(new LanguageServerSymbolProvider(this.languageClient!));
     }
 
     private async handleProvideRenameEdits(document: TextDocument, position: Position, newName: string, token: CancellationToken): Promise<WorkspaceEdit | undefined> {
@@ -312,14 +335,6 @@ export class DotNetServer implements IStartableLanguageServer {
         while (this.languageClient && !this.languageClient!.initializeResult) {
             await sleep(100);
         }
-    }
-
-    @swallowExceptions('Activating Unit Tests Manager for Language Server')
-    private async registerTestServices() {
-        if (!this.languageClient) {
-            throw new Error('languageClient not initialized');
-        }
-        await this.testManager.activate(new LanguageServerSymbolProvider(this.languageClient!));
     }
 
     @traceDecorators.error('Failed to start language server')

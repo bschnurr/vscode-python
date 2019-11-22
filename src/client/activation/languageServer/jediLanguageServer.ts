@@ -7,9 +7,11 @@ import {
     CompletionContext,
     CompletionItem,
     CompletionList,
+    DocumentFilter,
     DocumentSymbol,
     Event,
     Hover,
+    languages,
     Location,
     LocationLink,
     Position,
@@ -22,7 +24,8 @@ import {
     WorkspaceEdit
 } from 'vscode';
 
-import { IExtensionContext, ILogger, Resource } from '../../common/types';
+import { PYTHON } from '../../common/constants';
+import { IConfigurationService, IExtensionContext, ILogger, Resource } from '../../common/types';
 import { IShebangCodeLensProvider, PythonInterpreter } from '../../interpreter/contracts';
 import { IServiceContainer, IServiceManager } from '../../ioc/types';
 import { JediFactory } from '../../languageServices/jediProxyFactory';
@@ -35,13 +38,17 @@ import { PythonRenameProvider } from '../../providers/renameProvider';
 import { PythonSignatureProvider } from '../../providers/signatureProvider';
 import { JediSymbolProvider } from '../../providers/symbolProvider';
 import { ITestManagementService } from '../../testing/types';
+import { BlockFormatProviders } from '../../typeFormatters/blockFormatProvider';
+import { OnTypeFormattingDispatcher } from '../../typeFormatters/dispatcher';
+import { OnEnterFormatter } from '../../typeFormatters/onEnterFormatter';
 import { WorkspaceSymbols } from '../../workspaceSymbols/main';
 import { IStartableLanguageServer } from '../types';
 
 @injectable()
-export class JediServer implements IStartableLanguageServer {
+export class JediLanguageServer implements IStartableLanguageServer {
     private readonly context: IExtensionContext;
     private jediFactory?: JediFactory;
+    private readonly documentSelector: DocumentFilter[];
     private renameProvider: PythonRenameProvider | undefined;
     private hoverProvider: PythonHoverProvider | undefined;
     private definitionProvider: PythonDefinitionProvider | undefined;
@@ -53,6 +60,7 @@ export class JediServer implements IStartableLanguageServer {
 
     constructor(@inject(IServiceManager) private serviceManager: IServiceManager) {
         this.context = this.serviceManager.get<IExtensionContext>(IExtensionContext);
+        this.documentSelector = PYTHON;
     }
 
     public async startup(_resource: Resource, _interpreter?: PythonInterpreter): Promise<void> {
@@ -60,10 +68,11 @@ export class JediServer implements IStartableLanguageServer {
             throw new Error('Jedi already started');
         }
         const context = this.context;
+
         const jediFactory = (this.jediFactory = new JediFactory(context.asAbsolutePath('.'), this.serviceManager));
         context.subscriptions.push(jediFactory);
         context.subscriptions.push(...activateGoToObjectDefinitionProvider(jediFactory));
-        context.subscriptions.push(jediFactory);
+
         this.renameProvider = new PythonRenameProvider(this.serviceManager);
         this.definitionProvider = new PythonDefinitionProvider(jediFactory);
         this.hoverProvider = new PythonHoverProvider(jediFactory);
@@ -71,10 +80,69 @@ export class JediServer implements IStartableLanguageServer {
         this.completionProvider = new PythonCompletionItemProvider(jediFactory, this.serviceManager);
         this.codeLensProvider = this.serviceManager.get<IShebangCodeLensProvider>(IShebangCodeLensProvider);
 
+        context.subscriptions.push(jediFactory);
+        context.subscriptions.push(
+            languages.registerRenameProvider(this.documentSelector, this.renameProvider)
+        );
+        context.subscriptions.push(languages.registerDefinitionProvider(this.documentSelector, this.definitionProvider));
+        context.subscriptions.push(
+            languages.registerHoverProvider(this.documentSelector, this.hoverProvider)
+        );
+        context.subscriptions.push(
+            languages.registerReferenceProvider(this.documentSelector, this.referenceProvider)
+        );
+        context.subscriptions.push(
+            languages.registerCompletionItemProvider(
+                this.documentSelector,
+                this.completionProvider,
+                '.'
+            )
+        );
+        context.subscriptions.push(
+            languages.registerCodeLensProvider(
+                this.documentSelector,
+                this.codeLensProvider
+            )
+        );
+
+        const onTypeDispatcher = new OnTypeFormattingDispatcher({
+            '\n': new OnEnterFormatter(),
+            ':': new BlockFormatProviders()
+        });
+        const onTypeTriggers = onTypeDispatcher.getTriggerCharacters();
+        if (onTypeTriggers) {
+            context.subscriptions.push(
+                languages.registerOnTypeFormattingEditProvider(
+                    PYTHON,
+                    onTypeDispatcher,
+                    onTypeTriggers.first,
+                    ...onTypeTriggers.more
+                )
+            );
+        }
+
         const serviceContainer = this.serviceManager.get<IServiceContainer>(IServiceContainer);
-        context.subscriptions.push(new WorkspaceSymbols(serviceContainer));
         this.symbolProvider = new JediSymbolProvider(serviceContainer, jediFactory);
         this.signatureProvider = new PythonSignatureProvider(jediFactory);
+        context.subscriptions.push(new WorkspaceSymbols(serviceContainer));
+        context.subscriptions.push(languages.registerDocumentSymbolProvider(this.documentSelector, this.symbolProvider));
+
+        const pythonSettings = this.serviceManager.get<IConfigurationService>(IConfigurationService).getSettings();
+        if (pythonSettings.devOptions.indexOf('DISABLE_SIGNATURE') === -1) {
+            context.subscriptions.push(
+                languages.registerSignatureHelpProvider(
+                    this.documentSelector,
+                    this.signatureProvider,
+                    '(',
+                    ','
+                )
+            );
+        }
+
+        context.subscriptions.push(
+            languages.registerRenameProvider(PYTHON, new PythonRenameProvider(serviceContainer))
+        );
+
         const testManagementService = this.serviceManager.get<ITestManagementService>(ITestManagementService);
         testManagementService
             .activate(this.symbolProvider)

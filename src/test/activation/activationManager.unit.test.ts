@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 'use strict';
 
 import { expect } from 'chai';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
 import * as typemoq from 'typemoq';
 import { TextDocument, Uri } from 'vscode';
+
 import { ExtensionActivationManager } from '../../client/activation/activationManager';
-import { LanguageServerExtensionActivationService } from '../../client/activation/languageServer/cache';
+import { LanguageServerCache } from '../../client/activation/languageServer/cache';
 import { IExtensionActivationService } from '../../client/activation/types';
 import { IApplicationDiagnostics } from '../../client/application/types';
 import { IDocumentManager, IWorkspaceService } from '../../client/common/application/types';
@@ -50,8 +50,8 @@ suite('Activation - ActivationManager', () => {
         autoSelection = typemoq.Mock.ofType<IInterpreterAutoSelectionService>();
         interpreterService = mock(InterpreterService);
         documentManager = typemoq.Mock.ofType<IDocumentManager>();
-        activationService1 = mock(LanguageServerExtensionActivationService);
-        activationService2 = mock(LanguageServerExtensionActivationService);
+        activationService1 = mock(LanguageServerCache);
+        activationService2 = mock(LanguageServerCache);
         managerTest = new ExtensionActivationManagerTest(
             [instance(activationService1), instance(activationService2)], [],
             documentManager.object,

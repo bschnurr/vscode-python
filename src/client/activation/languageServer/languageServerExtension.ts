@@ -11,7 +11,7 @@ import { IDisposable } from '../../common/types';
 import { ILanguageServerExtension } from '../types';
 
 // This command is passed by Intellicode to tell us to send a command to the .net Language server.
-const loadExtensionCommand = 'python._loadLanguageServerExtension';
+export const LoadLanguageServerExtensionCommand = 'python._loadLanguageServerExtension';
 
 @injectable()
 export class LanguageServerExtension implements ILanguageServerExtension {
@@ -28,7 +28,7 @@ export class LanguageServerExtension implements ILanguageServerExtension {
         if (this.disposable) {
             return;
         }
-        this.disposable = this.commandManager.registerCommand(loadExtensionCommand, args => {
+        this.disposable = this.commandManager.registerCommand(LoadLanguageServerExtensionCommand, args => {
             this.loadExtensionArgs = args;
             this._invoked.fire();
         });

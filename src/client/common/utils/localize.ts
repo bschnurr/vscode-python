@@ -49,6 +49,8 @@ export namespace LanguageService {
     export const extractionDoneOutputMessage = localize('LanguageService.extractionDoneOutputMessage', 'done.');
     export const reloadVSCodeIfSeachPathHasChanged = localize('LanguageService.reloadVSCodeIfSeachPathHasChanged', 'Search paths have changed for this Python interpreter. Please reload the extension to ensure that the IntelliSense works correctly.');
 
+    export const reloadMessage = localize('LanguageService.reloadMessage', 'Please reload the window switching between language engines.');
+    export const reloadButton = localize('LanguageService.reloadButton', 'Reload');
 }
 
 export namespace Http {

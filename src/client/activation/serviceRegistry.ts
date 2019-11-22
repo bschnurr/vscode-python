@@ -19,10 +19,10 @@ import { ExtensionActivationManager } from './activationManager';
 import { ExtensionSurveyPrompt } from './extensionSurvey';
 import { LanguageServerAnalysisOptions } from './languageServer/analysisOptions';
 import { LanguageServerCache } from './languageServer/cache';
-import { DotNetServer } from './languageServer/dotNetServer';
+import { DotNetLanguageServer } from './languageServer/dotNetLanguageServer';
 import { DownloadBetaChannelRule, DownloadDailyChannelRule } from './languageServer/downloadChannelRules';
 import { LanguageServerDownloader } from './languageServer/downloader';
-import { JediServer } from './languageServer/jeditServer';
+import { JediLanguageServer } from './languageServer/jediLanguageServer';
 import {
     BaseLanguageClientFactory,
     DownloadedLanguageClientFactory,
@@ -63,8 +63,8 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<IExtensionActivationService>(IExtensionActivationService, LanguageServerCache);
     serviceManager.addSingleton<ILanguageServerExtension>(ILanguageServerExtension, LanguageServerExtension);
     serviceManager.add<IExtensionActivationManager>(IExtensionActivationManager, ExtensionActivationManager);
-    serviceManager.add<IStartableLanguageServer>(IStartableLanguageServer, JediServer, LanguageServerType.Jedi);
-    serviceManager.add<IStartableLanguageServer>(IStartableLanguageServer, DotNetServer, LanguageServerType.DotNet);
+    serviceManager.add<IStartableLanguageServer>(IStartableLanguageServer, JediLanguageServer, LanguageServerType.Jedi);
+    serviceManager.add<IStartableLanguageServer>(IStartableLanguageServer, DotNetLanguageServer, LanguageServerType.DotNet);
     serviceManager.addSingleton<IPythonExtensionBanner>(IPythonExtensionBanner, LanguageServerSurveyBanner, BANNER_NAME_LS_SURVEY);
     serviceManager.addSingleton<IPythonExtensionBanner>(IPythonExtensionBanner, ProposeLanguageServerBanner, BANNER_NAME_PROPOSE_LS);
     serviceManager.addSingleton<IPythonExtensionBanner>(IPythonExtensionBanner, DataScienceSurveyBanner, BANNER_NAME_DS_SURVEY);

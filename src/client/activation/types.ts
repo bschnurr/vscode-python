@@ -1,11 +1,23 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
 'use strict';
 
 import { SemVer } from 'semver';
-import { Event, RenameProvider, DefinitionProvider, HoverProvider, ReferenceProvider, CompletionItemProvider, CodeLensProvider, DocumentSymbolProvider, SignatureHelpProvider } from 'vscode';
+import {
+    CodeLensProvider,
+    CompletionItemProvider,
+    DefinitionProvider,
+    DocumentSymbolProvider,
+    Event,
+    HoverProvider,
+    ReferenceProvider,
+    RenameProvider,
+    SignatureHelpProvider,
+    TextDocument,
+    TextDocumentContentChangeEvent
+} from 'vscode';
 import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
+
 import { NugetPackage } from '../common/nuget/types';
 import { IDisposable, IOutputChannel, LanguageServerDownloadChannels, Resource } from '../common/types';
 import { PythonInterpreter } from '../interpreter/contracts';
@@ -61,6 +73,12 @@ export interface ILanguageServerCache {
     get(resource: Resource, interpreter?: PythonInterpreter): Promise<ILanguageServer>;
 }
 
+// tslint:disable-next-line: interface-name
+export interface DocumentHandler {
+    handleOpen(document: TextDocument): void;
+    handleChanges(document: TextDocument, changes: TextDocumentContentChangeEvent[]): void;
+}
+
 export interface ILanguageServer extends
     RenameProvider,
     DefinitionProvider,
@@ -69,7 +87,8 @@ export interface ILanguageServer extends
     CompletionItemProvider,
     CodeLensProvider,
     DocumentSymbolProvider,
-    SignatureHelpProvider {
+    SignatureHelpProvider,
+    Partial<DocumentHandler> {
 }
 
 export const IStartableLanguageServer = Symbol('IStartableLanguageServer');
