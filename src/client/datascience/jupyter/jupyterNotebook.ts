@@ -40,6 +40,7 @@ import {
     InterruptResult
 } from '../types';
 import { expandWorkingDir } from './jupyterUtils';
+import { PythonInterpreter, IInterpreterService } from '../../interpreter/contracts';
 
 class CellSubscriber {
     private deferred: Deferred<CellState> = createDeferred<CellState>();
@@ -157,7 +158,8 @@ export class JupyterNotebookBase implements INotebook {
         resource: Uri,
         private getDisposedError: () => Error,
         private workspace: IWorkspaceService,
-        private applicationService: IApplicationShell
+        private applicationService: IApplicationShell,
+        private interpreterService: IInterpreterService
     ) {
         this.sessionStartTime = Date.now();
         this._resource = resource;
@@ -438,7 +440,7 @@ export class JupyterNotebookBase implements INotebook {
                 cursor_pos: offsetInCode
             }), cancelToken);
             if (result && result.content) {
-                if ('matches' in result.content){
+                if ('matches' in result.content) {
                     return {
                         matches: result.content.matches,
                         cursor: {
@@ -450,7 +452,7 @@ export class JupyterNotebookBase implements INotebook {
                 } else {
                     return {
                         matches: [],
-                        cursor : {start: 0, end: 0},
+                        cursor: { start: 0, end: 0 },
                         metadata: []
                     };
                 }
@@ -459,6 +461,13 @@ export class JupyterNotebookBase implements INotebook {
 
         // Default is just say session was disposed
         throw new Error(localize.DataScience.sessionDisposed());
+    }
+
+    public async getMatchingInterpreter(): Promise<PythonInterpreter | undefined> {
+        // tslint:disable-next-line: no-suspicious-comment
+        // TODO: This should use the kernel to determine which interpreter matches. Right now
+        // just return the active one
+        return this.interpreterService.getActiveInterpreter();
     }
 
     private finishUncompletedCells() {
@@ -734,13 +743,13 @@ export class JupyterNotebookBase implements INotebook {
                         .catch(e => {
                             // @jupyterlab/services throws a `Canceled` error when the kernel is interrupted.
                             // Such an error must be ignored.
-                            if (e && e instanceof Error && e.message === 'Canceled'){
+                            if (e && e instanceof Error && e.message === 'Canceled') {
                                 subscriber.complete(this.sessionStartTime);
                             } else {
                                 subscriber.error(this.sessionStartTime, e);
                             }
                         })
-                        .finally(() => exitHandlerDisposable?.dispose()).ignoreErrors();
+                        .finally(() => exitHandlerDisposable ?.dispose()).ignoreErrors();
                 } else {
                     subscriber.error(this.sessionStartTime, this.getDisposedError());
                 }
