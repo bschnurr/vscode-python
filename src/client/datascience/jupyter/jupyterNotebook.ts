@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-'use strict';
 import '../../common/extensions';
 
 // tslint:disable-next-line: no-require-imports
@@ -23,6 +22,7 @@ import { createDeferred, Deferred, waitForPromise } from '../../common/utils/asy
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
 import { StopWatch } from '../../common/utils/stopWatch';
+import { IInterpreterService, PythonInterpreter } from '../../interpreter/contracts';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { generateCells } from '../cellFactory';
 import { CellMatcher } from '../cellMatcher';
@@ -40,7 +40,6 @@ import {
     InterruptResult
 } from '../types';
 import { expandWorkingDir } from './jupyterUtils';
-import { PythonInterpreter, IInterpreterService } from '../../interpreter/contracts';
 
 class CellSubscriber {
     private deferred: Deferred<CellState> = createDeferred<CellState>();
@@ -749,7 +748,7 @@ export class JupyterNotebookBase implements INotebook {
                                 subscriber.error(this.sessionStartTime, e);
                             }
                         })
-                        .finally(() => exitHandlerDisposable ?.dispose()).ignoreErrors();
+                        .finally(() => exitHandlerDisposable?.dispose()).ignoreErrors();
                 } else {
                     subscriber.error(this.sessionStartTime, this.getDisposedError());
                 }

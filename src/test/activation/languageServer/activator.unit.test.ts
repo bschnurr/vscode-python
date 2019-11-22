@@ -5,15 +5,13 @@
 
 import * as path from 'path';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
+import * as TypeMoq from 'typemoq';
 import { Uri } from 'vscode';
-import { LanguageServerExtensionActivator } from '../../../client/activation/languageServer/activator';
 import { LanguageServerDownloader } from '../../../client/activation/languageServer/downloader';
 import { LanguageServerFolderService } from '../../../client/activation/languageServer/languageServerFolderService';
-import { LanguageServerManager } from '../../../client/activation/languageServer/manager';
 import {
     ILanguageServerDownloader,
     ILanguageServerFolderService,
-    ILanguageServerManager
 } from '../../../client/activation/types';
 import { IWorkspaceService } from '../../../client/common/application/types';
 import { WorkspaceService } from '../../../client/common/application/workspace';
@@ -21,48 +19,60 @@ import { PythonSettings } from '../../../client/common/configSettings';
 import { ConfigurationService } from '../../../client/common/configuration/service';
 import { FileSystem } from '../../../client/common/platform/fileSystem';
 import { IFileSystem } from '../../../client/common/platform/types';
-import { IConfigurationService, IPythonSettings } from '../../../client/common/types';
+import { IConfigurationService, IPythonSettings, IOutputChannel } from '../../../client/common/types';
 import { createDeferred } from '../../../client/common/utils/async';
 import { EXTENSION_ROOT_DIR } from '../../../client/constants';
 import { sleep } from '../../core';
+import { LanguageServerCache } from '../../../client/activation/languageServer/cache';
+import { PersistentStateFactory } from '../../../client/common/persistentState';
+import { ExperimentsManager } from '../../../client/common/experiments';
+import { ApplicationShell } from '../../../client/common/application/applicationShell';
+import { LSNotSupportedDiagnosticService } from '../../../client/application/diagnostics/checks/lsNotSupported';
+import { IServiceContainer } from '../../../client/ioc/types';
 
 // tslint:disable:max-func-body-length
 
 suite('Language Server - Activator', () => {
-    let activator: LanguageServerExtensionActivator;
+    let activator: LanguageServerCache;
     let workspaceService: IWorkspaceService;
-    let manager: ILanguageServerManager;
     let fs: IFileSystem;
     let lsDownloader: ILanguageServerDownloader;
     let lsFolderService: ILanguageServerFolderService;
     let configuration: IConfigurationService;
     let settings: IPythonSettings;
     setup(() => {
-        manager = mock(LanguageServerManager);
         workspaceService = mock(WorkspaceService);
         fs = mock(FileSystem);
         lsDownloader = mock(LanguageServerDownloader);
         lsFolderService = mock(LanguageServerFolderService);
         configuration = mock(ConfigurationService);
         settings = mock(PythonSettings);
+        const stateFactory = mock(PersistentStateFactory);
+        const experimentsManager = mock(ExperimentsManager);
+        const output = TypeMoq.Mock.ofType<IOutputChannel>();
+        const appShell = mock(ApplicationShell);
+        const diagnostics = mock(LSNotSupportedDiagnosticService);
+        const serviceContainer = TypeMoq.Mock.ofType<IServiceContainer>();
+
         when(configuration.getSettings(anything())).thenReturn(instance(settings));
-        activator = new LanguageServerExtensionActivator(
-            instance(manager),
+        activator = new LanguageServerCache(
             instance(workspaceService),
-            instance(fs),
-            instance(lsDownloader),
-            instance(lsFolderService),
-            instance(configuration)
+            instance(stateFactory),
+            instance(experimentsManager),
+            output.object,
+            instance(appShell),
+            instance(diagnostics),
+            [],
+            instance(configuration),
+            serviceContainer.object
         );
     });
-    test('Manager must be started without any workspace', async () => {
+    test('Cache must be started without any workspace', async () => {
         when(workspaceService.hasWorkspaceFolders).thenReturn(false);
-        when(manager.start(undefined)).thenResolve();
         when(settings.downloadLanguageServer).thenReturn(false);
 
         await activator.activate(undefined);
 
-        verify(manager.start(undefined)).once();
         verify(workspaceService.hasWorkspaceFolders).once();
     });
     test('Manager must be disposed', async () => {
