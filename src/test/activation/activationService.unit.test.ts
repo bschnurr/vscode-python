@@ -15,7 +15,7 @@ import {
     IExtensionActivationService,
     ILanguageServerActivator,
     ILanguageServerFolderService,
-    LanguageServerActivator
+    LanguageServerType
 } from '../../client/activation/types';
 import { LSNotSupportedDiagnosticServiceId } from '../../client/application/diagnostics/checks/lsNotSupported';
 import { IDiagnostic, IDiagnosticsService } from '../../client/application/diagnostics/types';
@@ -115,9 +115,9 @@ suite('Activation - ActivationService', () => {
                     .setup(a => a.activate(undefined))
                     .returns(() => Promise.resolve())
                     .verifiable(TypeMoq.Times.once());
-                let activatorName = LanguageServerActivator.Jedi;
+                let activatorName = LanguageServerType.Jedi;
                 if (lsSupported && !jediIsEnabled) {
-                    activatorName = LanguageServerActivator.DotNet;
+                    activatorName = LanguageServerType.DotNet;
                 }
                 let diagnostics: IDiagnostic[];
                 if (!lsSupported && !jediIsEnabled) {
@@ -345,7 +345,7 @@ suite('Activation - ActivationService', () => {
                         .setup(c =>
                             c.get(
                                 TypeMoq.It.isValue(ILanguageServerActivator),
-                                TypeMoq.It.isValue(LanguageServerActivator.DotNet)
+                                TypeMoq.It.isValue(LanguageServerType.DotNet)
                             )
                         )
                         .returns(() => activatorDotNet.object)
@@ -358,7 +358,7 @@ suite('Activation - ActivationService', () => {
                         .setup(c =>
                             c.get(
                                 TypeMoq.It.isValue(ILanguageServerActivator),
-                                TypeMoq.It.isValue(LanguageServerActivator.Jedi)
+                                TypeMoq.It.isValue(LanguageServerType.Jedi)
                             )
                         )
                         .returns(() => activatorJedi.object)
@@ -390,7 +390,7 @@ suite('Activation - ActivationService', () => {
                         .setup(l => l.handle(TypeMoq.It.isValue([])))
                         .returns(() => Promise.resolve());
                     serviceContainer
-                        .setup(c => c.get(TypeMoq.It.isValue(ILanguageServerActivator), TypeMoq.It.isValue(LanguageServerActivator.DotNet)))
+                        .setup(c => c.get(TypeMoq.It.isValue(ILanguageServerActivator), TypeMoq.It.isValue(LanguageServerType.DotNet)))
                         .returns(() => activator.object)
                         .verifiable(TypeMoq.Times.atLeastOnce());
                     workspaceService
@@ -463,7 +463,7 @@ suite('Activation - ActivationService', () => {
                     const folder1 = { name: 'one', uri: Uri.parse('one'), index: 1 };
                     const folder2 = { name: 'two', uri: Uri.parse('two'), index: 2 };
                     serviceContainer
-                        .setup(c => c.get(TypeMoq.It.isValue(ILanguageServerActivator), TypeMoq.It.isValue(LanguageServerActivator.Jedi)))
+                        .setup(c => c.get(TypeMoq.It.isValue(ILanguageServerActivator), TypeMoq.It.isValue(LanguageServerType.Jedi)))
                         .returns(() => activator1.object)
                         .verifiable(TypeMoq.Times.once());
                     activator1
@@ -481,7 +481,7 @@ suite('Activation - ActivationService', () => {
 
                     const activator2 = TypeMoq.Mock.ofType<ILanguageServerActivator>();
                     serviceContainer
-                        .setup(c => c.get(TypeMoq.It.isValue(ILanguageServerActivator), TypeMoq.It.isValue(LanguageServerActivator.Jedi)))
+                        .setup(c => c.get(TypeMoq.It.isValue(ILanguageServerActivator), TypeMoq.It.isValue(LanguageServerType.Jedi)))
                         .returns(() => activator2.object)
                         .verifiable(TypeMoq.Times.once());
                     activator2

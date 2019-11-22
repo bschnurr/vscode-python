@@ -8,7 +8,7 @@ import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import { CancellationToken, TextDocumentContentChangeEvent, Uri } from 'vscode';
 import * as vscodeLanguageClient from 'vscode-languageclient';
 
-import { ILanguageServer, ILanguageServerAnalysisOptions } from '../../../activation/types';
+import { ILanguageServer, ILanguageServerAnalysisOptions, ILanguageServerCache } from '../../../activation/types';
 import { IWorkspaceService } from '../../../common/application/types';
 import { IFileSystem } from '../../../common/platform/types';
 import { IConfigurationService } from '../../../common/types';
@@ -28,7 +28,7 @@ export class DotNetIntellisenseProvider extends BaseIntellisenseProvider impleme
     private active: boolean = false;
 
     constructor(
-        @inject(ILanguageServer) private languageServer: ILanguageServer,
+        @inject(ILanguageServerCache) private languageServerCache: ILanguageServerCache,
         @inject(ILanguageServerAnalysisOptions) private readonly analysisOptions: ILanguageServerAnalysisOptions,
         @inject(IWorkspaceService) workspaceService: IWorkspaceService,
         @inject(IConfigurationService) private configService: IConfigurationService,
@@ -128,7 +128,7 @@ export class DotNetIntellisenseProvider extends BaseIntellisenseProvider impleme
         }
     }
 
-    private getLanguageClient(file?: Uri): Promise<vscodeLanguageClient.LanguageClient> {
+    private getLanguageServer(file?: Uri): Promise<vscodeLanguageClient.LanguageClient> {
         if (!this.languageClientPromise) {
             this.languageClientPromise = createDeferred<vscodeLanguageClient.LanguageClient>();
             this.startup(file)

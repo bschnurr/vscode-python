@@ -409,15 +409,4 @@ export abstract class BaseIntellisenseProvider implements IInteractiveWindowList
         this.notebookIdentity = Uri.parse(identity.resource);
     }
 
-    private async getNotebook(): Promise<INotebook | undefined> {
-        // First get the active server
-        const activeServer = await this.jupyterExecution.getServer(await this.interactiveWindowProvider.getNotebookOptions());
-
-        // If that works, see if there's a matching notebook running
-        if (activeServer && this.notebookIdentity) {
-            return activeServer.getNotebook(this.notebookIdentity);
-        }
-
-        return undefined;
-    }
 }

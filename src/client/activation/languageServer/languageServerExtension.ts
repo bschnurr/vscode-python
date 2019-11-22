@@ -10,6 +10,7 @@ import '../../common/extensions';
 import { IDisposable } from '../../common/types';
 import { ILanguageServerExtension } from '../types';
 
+// This command is passed by Intellicode to tell us to send a command to the .net Language server.
 const loadExtensionCommand = 'python._loadLanguageServerExtension';
 
 @injectable()

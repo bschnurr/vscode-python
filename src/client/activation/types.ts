@@ -51,7 +51,7 @@ export interface IExtensionActivationService {
     activate(resource: Resource): Promise<void>;
 }
 
-export enum LanguageServerActivator {
+export enum LanguageServerType {
     Jedi = 'Jedi',
     DotNet = 'DotNet'
 }
@@ -73,7 +73,7 @@ export interface ILanguageServer extends
 }
 
 export const IStartableLanguageServer = Symbol('IStartableLanguageServer');
-export interface IStartableLanguageServer extends ILanguageServer {
+export interface IStartableLanguageServer extends ILanguageServer, IDisposable {
     startup(resource: Resource, interpreter?: PythonInterpreter): Promise<void>;
 }
 
@@ -122,6 +122,13 @@ export interface ILanguageServerAnalysisOptions extends IDisposable {
     readonly onDidChange: Event<void>;
     initialize(resource: Resource, interpreter?: PythonInterpreter): Promise<void>;
     getAnalysisOptions(): Promise<LanguageClientOptions>;
+}
+
+export const ILanguageServerExtension = Symbol('ILanguageServerExtension');
+export interface ILanguageServerExtension extends IDisposable {
+    readonly invoked: Event<void>;
+    loadExtensionArgs?: {};
+    register(): void;
 }
 
 export enum PlatformName {

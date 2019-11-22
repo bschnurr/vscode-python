@@ -7,7 +7,7 @@ import { inject, injectable } from 'inversify';
 import { ConfigurationChangeEvent, Disposable, OutputChannel, Uri } from 'vscode';
 import { LSNotSupportedDiagnosticServiceId } from '../../application/diagnostics/checks/lsNotSupported';
 import { IDiagnosticsService } from '../../application/diagnostics/types';
-import { IApplicationShell, ICommandManager, IWorkspaceService } from '../../common/application/types';
+import { IApplicationShell, ICommandManager, IWorkspaceService, ILanguageService } from '../../common/application/types';
 import { STANDARD_OUTPUT_CHANNEL } from '../../common/constants';
 import { LSControl, LSEnabled } from '../../common/experimentGroups';
 import '../../common/extensions';
@@ -17,18 +17,17 @@ import { swallowExceptions } from '../../common/utils/decorators';
 import { IServiceContainer } from '../../ioc/types';
 import { sendTelemetryEvent } from '../../telemetry';
 import { EventName } from '../../telemetry/constants';
-import { IExtensionActivationService, ILanguageServerActivator, LanguageServerActivator, ILanguageServerCache, ILanguageServer } from '../types';
+import { IExtensionActivationService, ILanguageServer, LanguageServerType, ILanguageServerCache, IStartableLanguageServer } from '../types';
 import { PythonInterpreter } from '../../interpreter/contracts';
 
 const jediEnabledSetting: keyof IPythonSettings = 'jediEnabled';
 const workspacePathNameForGlobalWorkspaces = '';
-type ActivatorInfo = { jedi: boolean; activator: ILanguageServerActivator };
+type ServerInfo = { jedi: boolean; server: IStartableLanguageServer };
 
 @injectable()
 export class LanguageServerCache implements IExtensionActivationService, ILanguageServerCache, Disposable {
-    private cache = new Map<string, ILanguageServer>();
-    private currentActivator?: ActivatorInfo;
-    private jediActivatedOnce: boolean = false;
+    private cache = new Map<string, Promise<IStartableLanguageServer>>();
+    private currentServer?: ServerInfo;
     private readonly workspaceService: IWorkspaceService;
     private readonly output: OutputChannel;
     private readonly appShell: IApplicationShell;
@@ -54,55 +53,25 @@ export class LanguageServerCache implements IExtensionActivationService, ILangua
     // When we change the current active document, we might need to recreate our language client.
     public async activate(resource: Resource): Promise<void> {
         this.resource = resource;
-        let jedi = this.useJedi();
-        if (!jedi) {
-            if (this.lsActivatedWorkspaces.has(this.getWorkspacePathKey(resource))) {
-                return;
-            }
-            const diagnostic = await this.lsNotSupportedDiagnosticService.diagnose(undefined);
-            this.lsNotSupportedDiagnosticService.handle(diagnostic).ignoreErrors();
-            if (diagnostic.length) {
-                sendTelemetryEvent(EventName.PYTHON_LANGUAGE_SERVER_PLATFORM_SUPPORTED, undefined, { supported: false });
-                jedi = true;
-            }
-        } else {
-            if (this.jediActivatedOnce) {
-                return;
-            }
-            this.jediActivatedOnce = true;
-        }
 
-        await this.logStartup(jedi);
-        let activatorName = jedi ? LanguageServerActivator.Jedi : LanguageServerActivator.DotNet;
-        let activator = this.serviceContainer.get<ILanguageServerActivator>(ILanguageServerActivator, activatorName);
-        this.currentActivator = { jedi, activator };
+        // Do the same thing as a get.
+        await this.get(resource);
+    }
 
-        try {
-            await activator.activate(resource);
-            if (!jedi) {
-                this.lsActivatedWorkspaces.set(this.getWorkspacePathKey(resource), activator);
-            }
-        } catch (ex) {
-            if (jedi) {
-                return;
-            }
-            //Language server fails, reverting to jedi
-            if (this.jediActivatedOnce) {
-                return;
-            }
-            this.jediActivatedOnce = true;
-            jedi = true;
-            await this.logStartup(jedi);
-            activatorName = LanguageServerActivator.Jedi;
-            activator = this.serviceContainer.get<ILanguageServerActivator>(ILanguageServerActivator, activatorName);
-            this.currentActivator = { jedi, activator };
-            await activator.activate(resource);
+    public get(resource: Resource, interpreter?: PythonInterpreter): Promise<ILanguageServer> {
+        // See if we already have it or not
+        const key = this.getKey(resource, interpreter);
+        let result: Promise<IStartableLanguageServer> | undefined = this.cache.get(key);
+        if (!result) {
+            result = this.createServer(resource, interpreter);
+            this.cache.set(key, result);
         }
+        return result;
     }
 
     public dispose() {
-        if (this.currentActivator) {
-            this.currentActivator.activator.dispose();
+        if (this.currentServer) {
+            this.currentServer.server.dispose();
         }
     }
     @swallowExceptions('Send telemetry for Language Server current selection')
@@ -153,15 +122,48 @@ export class LanguageServerCache implements IExtensionActivationService, ILangua
 
     protected onWorkspaceFoldersChanged() {
         //If an activated workspace folder was removed, dispose its activator
-        const workspaceKeys = this.workspaceService.workspaceFolders!.map(workspaceFolder => this.getWorkspacePathKey(workspaceFolder.uri));
-        const activatedWkspcKeys = Array.from(this.lsActivatedWorkspaces.keys());
+        const workspaceKeys = this.workspaceService.workspaceFolders!.map(workspaceFolder => this.getKey(workspaceFolder.uri));
+        const activatedWkspcKeys = Array.from(this.cache.keys());
         const activatedWkspcFoldersRemoved = activatedWkspcKeys.filter(item => workspaceKeys.indexOf(item) < 0);
         if (activatedWkspcFoldersRemoved.length > 0) {
             for (const folder of activatedWkspcFoldersRemoved) {
-                this.lsActivatedWorkspaces.get(folder)!.dispose();
-                this.lsActivatedWorkspaces!.delete(folder);
+                this.cache.get(folder)!.then(a => a.dispose()).ignoreErrors();
+                this.cache!.delete(folder);
             }
         }
+    }
+
+    private async createServer(resource: Resource, interpreter?: PythonInterpreter): Promise<IStartableLanguageServer> {
+        let jedi = this.useJedi();
+        if (!jedi) {
+            const diagnostic = await this.lsNotSupportedDiagnosticService.diagnose(undefined);
+            this.lsNotSupportedDiagnosticService.handle(diagnostic).ignoreErrors();
+            if (diagnostic.length) {
+                sendTelemetryEvent(EventName.PYTHON_LANGUAGE_SERVER_PLATFORM_SUPPORTED, undefined, { supported: false });
+                jedi = true;
+            }
+        }
+
+        await this.logStartup(jedi);
+        let serverName = jedi ? LanguageServerType.Jedi : LanguageServerType.DotNet;
+        let server = this.serviceContainer.get<IStartableLanguageServer>(IStartableLanguageServer, serverName);
+        this.currentServer = { jedi, server };
+
+        try {
+            await server.startup(resource);
+        } catch (ex) {
+            if (jedi) {
+                throw ex;
+            }
+            jedi = true;
+            await this.logStartup(jedi);
+            serverName = LanguageServerType.Jedi;
+            server = this.serviceContainer.get<IStartableLanguageServer>(IStartableLanguageServer, serverName);
+            this.currentServer = { jedi, server };
+            await server.startup(resource, interpreter);
+        }
+
+        return server;
     }
 
     private async logStartup(isJedi: boolean): Promise<void> {
@@ -179,7 +181,7 @@ export class LanguageServerCache implements IExtensionActivationService, ILangua
             return;
         }
         const jedi = this.useJedi();
-        if (this.currentActivator && this.currentActivator.jedi === jedi) {
+        if (this.currentServer && this.currentServer.jedi === jedi) {
             return;
         }
 
