@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Use Node ${{env.NODE_VERSION}}
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v2.1.4
         with:
           node-version: ${{env.NODE_VERSION}}
 
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Use Node ${{env.NODE_VERSION}}
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v2.1.4
         with:
           node-version: ${{env.NODE_VERSION}}
 
@@ -117,7 +117,7 @@ jobs:
           path: ${{env.special-working-directory-relative}}
 
       - name: Use Node ${{env.NODE_VERSION}}
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v2.1.4
         with:
           node-version: ${{env.NODE_VERSION}}
 
@@ -133,7 +133,7 @@ jobs:
           python-version: ${{matrix.python}}
 
       - name: Use Node ${{env.NODE_VERSION}}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2.1.4
         with:
           node-version: ${{env.NODE_VERSION}}
 
@@ -313,7 +313,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Use Node ${{env.NODE_VERSION}}
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v2.1.4
         with:
           node-version: ${{env.NODE_VERSION}}
 
@@ -389,7 +389,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Use Node ${{env.NODE_VERSION}}
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v2.1.4
         with:
           node-version: ${{env.NODE_VERSION}}
 
