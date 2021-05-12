@@ -516,7 +516,7 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME_VSIX }}
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v1.3.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       - name: Upload to Blob Storage
