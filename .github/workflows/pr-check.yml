@@ -497,7 +497,7 @@ jobs:
           mv .github/codecov.yml $GITHUB_WORKSPACE
 
       - name: Upload coverage to codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2.0.3
         with:
           # Can't use the token to disambiguate since secrets aren't available from PR-triggered runs.
           #token: ${{ secrets.CODECOV_TOKEN }}
