@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { TelemetryEventMeasurements, TelemetryEventProperties } from '@vscode/extension-telemetry';
+import { LogOutputChannel } from 'vscode';
 import { BaseLanguageClient } from 'vscode-languageclient';
 
 export interface TelemetryReporter {
@@ -19,7 +20,8 @@ export interface TelemetryReporter {
 
 export interface ApiForPylance {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createClient(...args: any[]): BaseLanguageClient;
+    createClient(...args: any[]): BaseLanguageClient; // Deprecated
+    getOutputChannel(): LogOutputChannel;
     start(client: BaseLanguageClient): Promise<void>;
     stop(client: BaseLanguageClient): Promise<void>;
     getTelemetryReporter(): TelemetryReporter;

@@ -145,6 +145,7 @@ export function buildApi(
             },
         },
         pylance: {
+            getOutputChannel: () => outputChannel.channel,
             createClient: (...args: any[]): BaseLanguageClient => {
                 // Make sure we share output channel so that we can share one with
                 // Jedi as well.
